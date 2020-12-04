@@ -13,8 +13,7 @@ function countTrees(right, down) {
         if (checkme == '#')
             treecount++;
         position += right;
-        if (position >= rowsize)
-            position -= rowsize;
+        position %= rowsize;
     }
     return treecount;
 }
