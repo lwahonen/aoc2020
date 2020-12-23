@@ -1,11 +1,13 @@
 import {readFileSync} from 'fs';
+import * as fs from "fs";
 
-let file = readFileSync('c:\\users\\lwahonen\\Dropbox\\advent\\2020\\data\\day_20.txt', 'utf-8');
+let file = readFileSync('/Users/lwahonen/Dropbox/advent/2020/data/day_20.txt', 'utf-8');
+
 file = file.replace(/#/g, "1");
 file = file.replace(/\./g, "0");
 var items = file.split("\n\n").filter(x => x.length > 0);
 
-var tiles = {};
+let tiles = {};
 let RIGHT = 0;
 let BOTTOM = 1;
 let LEFT = 2;
@@ -16,7 +18,7 @@ let PUZZLE_SIZE = 0;
 items.forEach(tile => {
         PUZZLE_SIZE++;
         let r = tile.split("\n").filter(x => x.length > 0);
-        let tt=parse_tile(r.slice(1), r[0].substr(5,4));
+        let tt = parse_tile(r.slice(1), r[0].substr(5, 4));
         // console.log("Tile " + JSON.stringify(tt));
         tiles[tt["name"]] = tt;
     }
@@ -43,15 +45,6 @@ function parse_tile(r, name) {
     tt["right"] = parseInt(right, 2);
     tt["rows"] = r;
     return tt;
-}
-
-function reverse(n: number): number {
-    let value = n.toString(2).padStart(ROW_LENGTH, "0");
-    value = value
-        .split("")
-        .reverse()
-        .join("");
-    return parseInt(value, 2);
 }
 
 function reversest(value: string): string {
@@ -86,7 +79,7 @@ function testvariants(first: any, piecename: any, orient: number) {
     let v = first["name"] + "," + piecename + "," + orient;
     if (piece_test_cache.hasOwnProperty(v))
         return piece_test_cache[v];
-    for (var variantname in varr) {
+    for (let variantname in varr) {
         let piece = varr[variantname];
         if (testpieces(first, piece, orient))
             fits[piece["name"]] = piece;
@@ -95,111 +88,83 @@ function testvariants(first: any, piecename: any, orient: number) {
     return fits;
 }
 
-let names = Object.keys(tiles);
-console.log("Piece count=" + names.length);
-
 let variants = {};
-
-for (var realname in tiles) {
+for (let realname in tiles) {
     let permutations = getPermutations(tiles[realname]);
     variants[realname] = permutations;
     Object.assign(tiles, permutations);
 }
 
-let top_pieces = [];
-for (var bottomname in variants) {
-    for (var piecename in variants[bottomname]) {
-        let piece = tiles[piecename];
-        let fits = true;
-        for (var topname in variants) {
-            if (topname == bottomname)
-                continue;
-            let abovematch = testvariants(piece, topname, TOP);
-            if (Object.keys(abovematch).length > 0) {
-                fits = false;
-                break;
+function get_edge_pieces(orient: number = TOP) {
+    let top_pieces = [];
+    for (let bottomname in variants) {
+        for (let piecename in variants[bottomname]) {
+            let piece = tiles[piecename];
+            let fits = true;
+            for (let topname in variants) {
+                if (topname == bottomname)
+                    continue;
+                let abovematch = testvariants(piece, topname, orient);
+                if (Object.keys(abovematch).length > 0) {
+                    fits = false;
+                    break;
+                }
             }
+            if (fits)
+                top_pieces.push(piecename);
         }
-        if (fits)
-            top_pieces.push(piecename);
     }
+    return top_pieces;
 }
 
-let left_pieces = [];
-for (var bottomname in variants) {
-    for (var piecename in variants[bottomname]) {
-        let piece = tiles[piecename];
-        let fits = true;
-        for (var topname in variants) {
-            if (topname == bottomname)
-                continue;
-            let abovematch = testvariants(piece, topname, LEFT);
-            if (Object.keys(abovematch).length > 0) {
-                fits = false;
-                break;
-            }
-        }
-        if (fits)
-            left_pieces.push(piecename);
-    }
-}
+let top_pieces = get_edge_pieces(TOP);
+let left_pieces = get_edge_pieces(LEFT);
+let right_pieces = get_edge_pieces(RIGHT);
 
-
-let right_pieces = [];
-for (var bottomname in variants) {
-    for (var piecename in variants[bottomname]) {
-        let piece = tiles[piecename];
-        let fits = true;
-        for (var topname in variants) {
-            if (topname == bottomname)
-                continue;
-            let abovematch = testvariants(piece, topname, RIGHT);
-            if (Object.keys(abovematch).length > 0) {
-                fits = false;
-                break;
-            }
-        }
-        if (fits)
-            right_pieces.push(piecename);
-    }
-}
+var part1_output = "";
 
 find({}, {}, {}, 0, 0);
 
+//fs.writeFileSync("/tmp/part1.txt", part1_output);
 
-function find(placed, placenames, placedexact, row, col) {
+export function find(placed, placenames, placedexact, row, col) {
     if (row == PUZZLE_SIZE) {
-        console.log("Found puzzle answer " + JSON.stringify(placed))
+        // console.log("Found puzzle answer " + JSON.stringify(placed))
         let mult = 1;
-        for (var answer in placenames) {
+        for (let answer in placenames) {
             let a = placenames[answer];
             if (a[0] == 0 && a[1] == 0) {
-                console.log("Top left corner " + answer);
+                // console.log("Top left corner " + answer);
                 mult *= +answer;
             }
 
             if (a[0] == 0 && a[1] == PUZZLE_SIZE - 1) {
-                console.log("Top right corner " + answer);
+                // console.log("Top right corner " + answer);
                 mult *= +answer;
             }
 
             if (a[0] == PUZZLE_SIZE - 1 && a[1] == 0) {
-                console.log("Bottom left corner " + answer);
+                // console.log("Bottom left corner " + answer);
                 mult *= +answer;
             }
 
             if (a[0] == PUZZLE_SIZE - 1 && a[1] == PUZZLE_SIZE - 1) {
-                console.log("Bottom right corner " + answer);
+                // console.log("Bottom right corner " + answer);
                 mult *= +answer;
             }
         }
-        console.log("mult " + mult);
-        process.exit(0);
+        for (let exact in placedexact) {
+            let t = placedexact[exact];
+            let rows = tiles[t]["rows"];
+            part1_output += "\n\nIn position=" + exact + "\n" + (rows.join("\n").replace(/0/g, '.').replace(/1/g, '#'))
+        }
+        console.log("Part 1 answer is " + mult);
+        return part1_output;
     }
     // console.log("Testing "+row+","+col+" with puzzle " + JSON.stringify(placedexact));
 
     let key = "" + row + "," + col;
-    for (var piecename in variants) {
+    for (let piecename in variants) {
         if (placenames.hasOwnProperty(piecename))
             continue;
         let pieces = {...variants[piecename]};
@@ -215,11 +180,11 @@ function find(placed, placenames, placedexact, row, col) {
             let leftmatch = testvariants(left, piecename, RIGHT);
             if (Object.keys(leftmatch).length === 0)
                 continue;
-            for (var keyname in pieces)
+            for (let keyname in pieces)
                 if (!leftmatch.hasOwnProperty(keyname))
                     delete pieces[keyname];
         }
-        for (var tilename in pieces) {
+        for (let tilename in pieces) {
             if (row == 0 && !top_pieces.includes(tilename)) {
                 continue;
             }
@@ -238,7 +203,7 @@ function find(placed, placenames, placedexact, row, col) {
             let now_place_exact = {...placedexact};
             now_placed[key] = tile;
             now_place_names[realname] = [row, col];
-            now_place_names[key] = tile["name"];
+            now_place_exact[key] = tile["name"];
             let nowcol = col + 1;
             let nowrow = row;
             if (nowcol == PUZZLE_SIZE) {
@@ -246,9 +211,12 @@ function find(placed, placenames, placedexact, row, col) {
                 nowcol = 0;
             }
 
-            find(now_placed, now_place_names, now_place_exact, nowrow, nowcol);
+            let found = find(now_placed, now_place_names, now_place_exact, nowrow, nowcol);
+            if (found != null)
+                return found;
         }
     }
+    return null;
 }
 
 function rotate(tile) {
@@ -279,7 +247,7 @@ function getPermutations(tile: any) {
 
         for (let topswap = 0; topswap < 2; topswap++) {
             let flipstr = rotatestr;
-            let flipped_rows=[...rows];
+            let flipped_rows = [...rows];
             // Swap top pair
             if (topswap == 1) {
                 flipstr += "_flip"
@@ -287,7 +255,7 @@ function getPermutations(tile: any) {
             }
             for (let sideswap = 0; sideswap < 2; sideswap++) {
                 let mirrorstr = flipstr;
-                let mirrored_rows=[...flipped_rows];
+                let mirrored_rows = [...flipped_rows];
                 // Swap side pair
                 if (sideswap == 1) {
                     mirrorstr += "_mirror"
@@ -300,9 +268,4 @@ function getPermutations(tile: any) {
         }
     }
     return perms;
-}
-
-function print(n)
-{
-    return n.toString(2).padStart(ROW_LENGTH, "0");
 }
